@@ -208,25 +208,25 @@ twin, pred, risk, reco, outs = build_twin(state)
 if page == 0:
     st.subheader("Step 1 · Clinical assessment (7 sentinel indicators)")
     st.caption("Remaining features are median-imputed so the twin stays fully specified.")
+    st.divider()
     left, right = st.columns(2)
     for i, (col, question, hint, kind) in enumerate(QUESTIONS):
         box = left if i % 2 == 0 else right
         with box:
-            st.markdown("<div class='qcard'>", unsafe_allow_html=True)
-            st.markdown(f"<p>{question}</p>", unsafe_allow_html=True)
             if col not in col_set:
                 st.caption("Unavailable in current schema.")
             elif kind == "yesno":
+                st.write(f"**{question}**")
                 st.radio(question, ["No", "Yes"], horizontal=True,
                          key=f"q_{col}", label_visibility="collapsed")
             else:
                 lo = int(round(float(df[col].min())))
                 hi = int(round(float(df[col].max())))
                 med = int(round(float(df[col].median())))
+                st.write(f"**{question}**")
                 st.slider(question, lo, hi, med, step=1,
                           key=f"q_{col}", label_visibility="collapsed")
             st.caption(hint)
-            st.markdown("</div>", unsafe_allow_html=True)
     st.button("Next: see results →", on_click=goto, args=(1,), type="primary")
 
 # ------------------------------------------------------------- Page 2 ---
