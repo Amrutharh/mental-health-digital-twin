@@ -145,12 +145,9 @@ for tab, (gname, feats) in zip(tabs, GROUPS.items()):
                         unsafe_allow_html=True,
                     )
                 else:
-                    if pd.api.types.is_integer_dtype(df[f]):
-                        vals[f] = st.slider(label, int(lo), int(hi), int(med),
-                                            step=1, key=f"in_{f}")
-                    else:
-                        vals[f] = st.slider(label, float(lo), float(hi), float(med),
-                                            key=f"in_{f}")
+                    # All inputs are whole numbers (no decimals anywhere).
+                    vals[f] = st.slider(label, int(round(lo)), int(round(hi)),
+                                        int(round(med)), step=1, key=f"in_{f}")
                     st.markdown(
                         f"<span class='small'>Range {lo:.0f}–{hi:.0f} · "
                         f"typical {med:.0f}</span>",
