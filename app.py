@@ -26,8 +26,8 @@ from src import (
 )
 
 st.set_page_config(
-    page_title="Student Mental-Health Digital Twin",
-    page_icon="🧠",
+    page_title="Student Depression Prediction using Digital Twin",
+    page_icon="🎓",
     layout="wide",
 )
 
@@ -168,7 +168,7 @@ def build_twin(state: dict):
 # ---------------------------------------------------------------- header ---
 st.markdown(
     """<div class="hero">
-<h1>🧠 Student Mental-Health Digital Twin</h1>
+<h1>🎓 Student Depression Prediction using Digital Twin</h1>
 <p>8-layer system: preprocessing → 4-model ensemble (best-F1) →
 live digital twin → counterfactual simulation → 0-30 risk stratification →
 tiered intervention plan.</p>

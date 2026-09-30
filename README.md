@@ -1,4 +1,4 @@
-# 🧠 Student Mental-Health Digital Twin
+# 🎓 Student Depression Prediction using Digital Twin
 
 **🚀 Live Demo:** https://mental-health-digital-twin-gff6akkdz5nn9m8x9vnjyr.streamlit.app/
 
