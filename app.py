@@ -96,28 +96,24 @@ col_set = set(cols)
 st.markdown(
     """<div class="hero">
 <h1>🧠 MindMirror - Student Digital Twin</h1>
-<p>Live mirror of student wellbeing: 4-model AI (best-F1) · what-if simulations ·
-0-30 risk score · personalised guidance. Move the sliders - everything updates.</p>
+<p>Live mirror of student wellbeing: what-if simulations ·
+risk score · personalised guidance. Move the sliders - everything updates.</p>
 </div>""",
     unsafe_allow_html=True,
 )
 
 with st.sidebar:
-    st.header("⚙️ Model status")
-    st.success(f"Best model: **{best_name}**")
-    c_a, c_b = st.columns(2)
-    c_a.metric("Rows", len(df))
-    c_b.metric("Features", len(cols))
-    st.write(f"Real dataset: **{used_real}** · Classes: **{len(label_names)}**")
-    st.divider()
-    st.subheader("Macro F1 by model")
-    st.dataframe(
-        pd.DataFrame(
-            [{"Model": k, "F1": v["f1_macro"]} for k, v in results.items()]
-        ).set_index("Model"),
-        use_container_width=True,
+    st.header("About")
+    st.write(
+        "MindMirror is a supportive wellbeing check-in. "
+        "Adjust the inputs and see your predicted state, risk and guidance."
     )
-    st.caption("Winner picked automatically by macro F1 (handles imbalance).")
+    st.divider()
+    st.subheader("How to use")
+    st.write("1. Fill the tabs under Live student state.")
+    st.write("2. Read your prediction and risk below.")
+    st.write("3. Try the what-if table to preview improvements.")
+    st.caption("Supportive guidance only - not a medical diagnosis.")
 
 # ------------------------------------------------------- 1. live inputs ---
 st.subheader("1 · Live student state")
