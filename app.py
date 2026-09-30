@@ -23,12 +23,58 @@ from src import (
 )
 
 st.set_page_config(
-    page_title="Student Mental-Health Digital Twin",
+    page_title="MindMirror - Student Digital Twin",
     page_icon="🧠",
     layout="wide",
 )
 
-RISK_COLORS = {"Low": "green", "Medium": "orange", "High": "red", "Severe": "red"}
+# ------------------------------------------------------------- styling ---
+st.markdown(
+    """
+<style>
+.hero {
+  background: linear-gradient(120deg, #14B8A6 0%, #6366F1 60%, #A855F7 100%);
+  border-radius: 18px; padding: 26px 28px; margin-bottom: 18px;
+  color: white;
+}
+.hero h1 { margin: 0 0 6px 0; font-size: 2.1rem; }
+.hero p { margin: 0; opacity: 0.92; }
+.card {
+  background: #151F35; border: 1px solid #263252;
+  border-radius: 14px; padding: 16px 18px; margin-bottom: 14px;
+}
+.card h3 { margin-top: 0; }
+.stTabs [data-baseweb="tab-list"] { gap: 8px; }
+.stTabs [data-baseweb="tab"] {
+  background: #151F35; border-radius: 10px 10px 0 0;
+  padding: 8px 18px; border: 1px solid #263252;
+}
+.small { color: #94A3B8; font-size: 0.85rem; }
+</style>
+""",
+    unsafe_allow_html=True,
+)
+
+RISK_BADGE = {
+    "Low": "🟢 Low",
+    "Medium": "🟡 Medium",
+    "High": "🟠 High",
+    "Severe": "🔴 Severe",
+}
+
+GROUPS = {
+    "👤 Profile": ["Age", "Gender", "Education_Level", "Employment_Status"],
+    "🌙 Lifestyle": [
+        "Sleep_Hours", "SocialMedia_Hours", "SocialMedia_WhileEating",
+        "Your overeating level", "How many times you eat ", "Coping_Methods",
+    ],
+    "💭 Mind signals": [
+        "Symptoms", "Low_Energy", "Low_SelfEsteem", "Nervous_Level",
+        "Depression_Score", "Search_Depression_Online",
+        "Worsening_Depression", "Mental_Health_Support",
+    ],
+    "🚨 Risk flags": ["Self_Harm", "Suicide_Attempts"],
+}
 
 
 @st.cache_resource(show_spinner="Training models (once, then cached)...")
@@ -44,117 +90,162 @@ def get_trained():
 
 
 df, used_real, X, label_names, scaler, cols, best_name, best, results = get_trained()
+col_set = set(cols)
 
 # ---------------------------------------------------------------- header ---
-st.title("Student Mental-Health Digital Twin")
-st.caption(
-    "8-layer system: preprocess → predict → twin → what-if → "
-    "risk → guidance → dashboard → reports"
+st.markdown(
+    """<div class="hero">
+<h1>🧠 MindMirror - Student Digital Twin</h1>
+<p>Live mirror of student wellbeing: 4-model AI (best-F1) · what-if simulations ·
+0-30 risk score · personalised guidance. Move the sliders - everything updates.</p>
+</div>""",
+    unsafe_allow_html=True,
 )
 
 with st.sidebar:
-    st.header("Model status")
+    st.header("⚙️ Model status")
     st.success(f"Best model: **{best_name}**")
-    st.write(f"Real dataset: **{used_real}** (`Depression_Type` target)")
-    st.write(f"Rows: **{len(df)}** · Features: **{len(cols)}** · Classes: **{len(label_names)}**")
+    c_a, c_b = st.columns(2)
+    c_a.metric("Rows", len(df))
+    c_b.metric("Features", len(cols))
+    st.write(f"Real dataset: **{used_real}** · Classes: **{len(label_names)}**")
     st.divider()
-    st.subheader("Model F1 (macro)")
+    st.subheader("Macro F1 by model")
     st.dataframe(
         pd.DataFrame(
-            [{"model": k, "macro-F1": v["f1_macro"]} for k, v in results.items()]
-        ).set_index("model"),
+            [{"Model": k, "F1": v["f1_macro"]} for k, v in results.items()]
+        ).set_index("Model"),
         use_container_width=True,
     )
-    st.caption("Best model picked automatically by macro F1.")
+    st.caption("Winner picked automatically by macro F1 (handles imbalance).")
 
 # ------------------------------------------------------- 1. live inputs ---
-st.header("1. Live student state")
-st.caption("Move any slider - prediction, risk and guidance update instantly.")
-vals = {}
-input_cols = st.columns(3)
-for i, f in enumerate(cols):
-    box = input_cols[i % 3]
-    lo, hi = float(df[f].min()), float(df[f].max())
-    med = float(df[f].median())
-    with box:
-        if hi - lo <= 2:  # binary / flag column
-            opts = sorted(df[f].unique().tolist())
-            vals[f] = st.selectbox(f.replace("_", " "), opts, index=0)
-        else:
-            vals[f] = st.slider(
-                f.replace("_", " "), float(lo), float(hi), float(med)
-            )
+st.subheader("1 · Live student state")
+st.caption("Grouped like a real health app - edit values inside each tab.")
+
+vals: dict = {}
+tabs = st.tabs(list(GROUPS.keys()))
+for tab, (gname, feats) in zip(tabs, GROUPS.items()):
+    with tab:
+        present = [f for f in feats if f in col_set]
+        extra = [f for f in cols if f not in sum(GROUPS.values(), [])]
+        show = present + (extra if gname == "💭 Mind signals" else [])
+        if not show:
+            st.write("No fields in this group for the current dataset.")
+            continue
+        tcols = st.columns(2)
+        for i, f in enumerate(show):
+            box = tcols[i % 2]
+            lo, hi = float(df[f].min()), float(df[f].max())
+            med = float(df[f].median())
+            label = f.strip().replace("_", " ")
+            with box:
+                st.markdown(f"<div class='card'>", unsafe_allow_html=True)
+                if hi - lo <= 2:
+                    opts = sorted(df[f].unique().tolist())
+                    vals[f] = st.selectbox(label, opts, index=0, key=f"in_{f}")
+                    st.markdown(
+                        f"<span class='small'>Flag · 0/1 style</span>",
+                        unsafe_allow_html=True,
+                    )
+                else:
+                    vals[f] = st.slider(label, float(lo), float(hi), float(med),
+                                        key=f"in_{f}")
+                    st.markdown(
+                        f"<span class='small'>Range {lo:.0f}–{hi:.0f} · "
+                        f"typical {med:.0f}</span>",
+                        unsafe_allow_html=True,
+                    )
+                st.markdown("</div>", unsafe_allow_html=True)
+# any column not covered (safety net)
+missing = [f for f in cols if f not in vals]
+if missing:
+    with st.expander("Other fields"):
+        for f in missing:
+            vals[f] = st.slider(f, float(df[f].min()), float(df[f].max()),
+                                float(df[f].median()))
 
 twin = StudentDigitalTwin(
-    "demo-student",
-    vals,
-    model=best,
-    scaler=scaler,
-    feature_columns=cols,
-    label_names=label_names,
+    "demo-student", vals, model=best,
+    scaler=scaler, feature_columns=cols, label_names=label_names,
 )
 pred = twin.predict()
 risk = risk_profile(pred["proba"], twin.state, label_names)
 reco = recommend(risk, twin.state)
 
 # --------------------------------------------------- 2. prediction/risk ---
-st.header("2. Prediction and risk")
-m1, m2, m3 = st.columns(3)
-m1.metric("Predicted type", pred["label"])
-m2.metric("Risk score", f"{risk['score']} / 30")
-m3.metric("Risk level", risk["level"])
-st.markdown(f"Risk level: **:{RISK_COLORS.get(risk['level'], 'gray')}[{risk['level']}]**")
+st.subheader("2 · Prediction and risk")
+k1, k2, k3 = st.columns(3)
+with k1:
+    st.markdown("<div class='card'>", unsafe_allow_html=True)
+    st.metric("Predicted type", pred["label"])
+    st.markdown("</div>", unsafe_allow_html=True)
+with k2:
+    st.markdown("<div class='card'>", unsafe_allow_html=True)
+    st.metric("Risk score", f"{risk['score']} / 30")
+    st.markdown("</div>", unsafe_allow_html=True)
+with k3:
+    st.markdown("<div class='card'>", unsafe_allow_html=True)
+    st.metric("Risk level", RISK_BADGE.get(risk["level"], risk["level"]))
+    st.markdown("</div>", unsafe_allow_html=True)
 
-top3_df = pd.DataFrame(risk["top3"]).set_index("type") if risk["top3"] else pd.DataFrame()
-c_left, c_right = st.columns([1, 1])
-with c_left:
-    st.subheader("Top-3 likely types")
+left, right = st.columns([1, 1])
+with left:
+    st.markdown("<div class='card'>", unsafe_allow_html=True)
+    st.markdown("### Top-3 likely types")
     for t in risk["top3"]:
-        st.write(f"- {t['type']}: {t['prob']:.0%}")
-with c_right:
-    st.subheader("Probability chart")
+        st.progress(float(t["prob"]), text=f"{t['type']}: {t['prob']:.0%}")
+    st.markdown("</div>", unsafe_allow_html=True)
+with right:
+    st.markdown("<div class='card'>", unsafe_allow_html=True)
+    st.markdown("### Probability chart")
+    top3_df = pd.DataFrame(risk["top3"]).set_index("type") if risk["top3"] else pd.DataFrame()
     if not top3_df.empty:
         st.bar_chart(top3_df["prob"], use_container_width=True)
+    st.markdown("</div>", unsafe_allow_html=True)
 
 # ------------------------------------------------------------- 3. what-if ---
-st.header("3. What-if interventions")
-st.caption("Simulated on the twin only - original state is restored after each test.")
-outs = compare_scenarios(twin)  # auto-picks scenarios for this schema
+st.subheader("3 · What-if interventions")
+st.caption("Tested on the twin only - the student's real state is never touched.")
+outs = compare_scenarios(twin)
 if outs:
-    scenario_df = pd.DataFrame(
+    sdf = pd.DataFrame(
         [
             {
                 "Scenario": o["scenario"].replace("_", " "),
                 "Before": o["before"]["score"],
                 "After": o["after"]["score"],
                 "Delta": o["delta_score"],
-                "Improved?": "Yes" if o["improved"] else "No",
+                "Result": "Improved" if o["improved"] else ("Same" if o["delta_score"] == 0 else "Worse"),
             }
             for o in outs
         ]
     )
-    st.dataframe(scenario_df, use_container_width=True, hide_index=True)
+    st.dataframe(sdf, use_container_width=True, hide_index=True)
 else:
     st.warning("No applicable scenarios for this feature schema.")
 
 # ------------------------------------------------------------ 4. guidance ---
-st.header("4. Guidance")
-st.caption("Rule-based coping plan (paper's 'Generative AI Support Layer').")
+st.subheader("4 · Personal guidance")
 if reco["flags"]:
-    st.warning("Flags: " + ", ".join(reco["flags"]).replace("_", " "))
-g1, g2 = st.columns([2, 1])
-with g1:
-    st.subheader("Strategies")
+    st.warning("⚠️ Flags: " + ", ".join(reco["flags"]).replace("_", " "))
+gg1, gg2 = st.columns([2, 1])
+with gg1:
+    st.markdown("<div class='card'>", unsafe_allow_html=True)
+    st.markdown("### ✅ Strategies")
     for s in reco["strategies"]:
         st.write("- " + s)
-    st.subheader("Weekly roadmap")
+    st.markdown("### 🗓️ Weekly roadmap")
     for r in reco["weekly_roadmap"]:
         st.write("- " + r)
-with g2:
-    st.subheader("Encouragement")
+    st.markdown("</div>", unsafe_allow_html=True)
+with gg2:
+    st.markdown("<div class='card'>", unsafe_allow_html=True)
+    st.markdown("### 💬 Encouragement")
     st.info(reco["encouragement"])
+    st.markdown("</div>", unsafe_allow_html=True)
 
 st.divider()
 st.caption(reco["disclaimer"])
-st.caption("Tip for reviewers: try Sleep_Hours 4 vs 8, or Nervous_Level 1 vs 9, "
-           "and watch the risk score and top-3 change.")
+st.caption("Reviewer tip: set Sleep_Hours 4 vs 8, or Nervous_Level 1 vs 9, "
+           "and watch the score, top-3 bars and what-if table move.")
