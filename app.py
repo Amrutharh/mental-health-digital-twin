@@ -62,18 +62,28 @@ RISK_BADGE = {
     "Severe": "🔴 Severe",
 }
 
-GROUPS = {
-    "👤 Profile": ["Age", "Gender", "Education_Level", "Employment_Status"],
-    "🌙 Lifestyle": [
-        "Sleep_Hours", "SocialMedia_Hours", "SocialMedia_WhileEating",
-        "Your overeating level", "How many times you eat ", "Coping_Methods",
-    ],
-    "💭 Mind signals": [
-        "Symptoms", "Low_Energy", "Low_SelfEsteem", "Nervous_Level",
-        "Depression_Score", "Search_Depression_Online",
-        "Worsening_Depression", "Mental_Health_Support",
-    ],
-    "🚨 Risk flags": ["Self_Harm", "Suicide_Attempts"],
+FRIENDLY = {
+    # column: (pretty label, plain-English hint shown under the widget)
+    "Age": ("Age", "Your age in years."),
+    "Gender": ("Gender", "0 = female, 1 = male (as coded in the survey)."),
+    "Education_Level": ("Education level", "Higher number = higher education."),
+    "Employment_Status": ("Employment status", "Survey code for work situation."),
+    "Sleep_Hours": ("Sleep per night", "Hours you usually sleep."),
+    "SocialMedia_Hours": ("Social media time", "Hours per day on social media."),
+    "SocialMedia_WhileEating": ("Phone while eating", "How often you use phone while eating."),
+    "Your overeating level": ("Overeating level", "Higher = more overeating."),
+    "How many times you eat ": ("Meals per day", "Number of times you eat daily."),
+    "Coping_Methods": ("Coping methods", "Survey code for coping style."),
+    "Symptoms": ("Symptom score", "Total symptom count from the survey."),
+    "Low_Energy": ("Low energy?", "No = 0, Yes = 1."),
+    "Low_SelfEsteem": ("Low self-esteem?", "No = 0, Yes = 1."),
+    "Nervous_Level": ("Nervousness", "Higher = more nervous."),
+    "Depression_Score": ("Depression score", "Overall questionnaire score."),
+    "Search_Depression_Online": ("Searched help online?", "No = 0, Yes = 1."),
+    "Worsening_Depression": ("Feeling worsening?", "No = 0, Yes = 1."),
+    "Mental_Health_Support": ("Getting support?", "No = 0, Yes = 1."),
+    "Self_Harm": ("Self-harm?", "No = 0, Yes = 1. Please seek help if 1."),
+    "Suicide_Attempts": ("Suicide attempts?", "No = 0, Yes = 1. Seek help now if 1."),
 }
 
 
@@ -134,26 +144,19 @@ for tab, (gname, feats) in zip(tabs, GROUPS.items()):
             box = tcols[i % 2]
             lo, hi = float(df[f].min()), float(df[f].max())
             med = float(df[f].median())
-            label = f.strip().replace("_", " ")
+            label, hint = FRIENDLY.get(f, (f.strip().replace("_", " "), ""))
             with box:
-                st.markdown(f"<div class='card'>", unsafe_allow_html=True)
                 if hi - lo <= 2:
                     opts = sorted(df[f].unique().tolist())
-                    vals[f] = st.selectbox(label, opts, index=0, key=f"in_{f}")
-                    st.markdown(
-                        f"<span class='small'>Flag · 0/1 style</span>",
-                        unsafe_allow_html=True,
-                    )
+                    vals[f] = st.selectbox(label, opts, index=0,
+                                           key=f"in_{f}", help=hint)
                 else:
                     # All inputs are whole numbers (no decimals anywhere).
                     vals[f] = st.slider(label, int(round(lo)), int(round(hi)),
-                                        int(round(med)), step=1, key=f"in_{f}")
-                    st.markdown(
-                        f"<span class='small'>Range {lo:.0f}–{hi:.0f} · "
-                        f"typical {med:.0f}</span>",
-                        unsafe_allow_html=True,
-                    )
-                st.markdown("</div>", unsafe_allow_html=True)
+                                        int(round(med)), step=1,
+                                        key=f"in_{f}", help=hint)
+                if hint:
+                    st.caption(hint)
 # any column not covered (safety net)
 missing = [f for f in cols if f not in vals]
 if missing:
