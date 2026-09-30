@@ -202,6 +202,8 @@ if outs:
                 "If you do this": SCENARIO_NAMES.get(o["scenario"], o["scenario"].replace("_", " ")),
                 "Your score now": o["before"]["score"],
                 "Score after": o["after"]["score"],
+                "Sure now": f"{o['before']['top3'][0]['prob']:.0%}" if o["before"]["top3"] else "-",
+                "Sure after": f"{o['after']['top3'][0]['prob']:.0%}" if o["after"]["top3"] else "-",
                 "What happens": ("✅ Gets better" if o["improved"]
                                  else ("Same, no change" if o["delta_score"] == 0 else "❌ Gets worse")),
             }
@@ -209,6 +211,10 @@ if outs:
         ]
     )
     st.dataframe(sdf, use_container_width=True, hide_index=True)
+    st.caption("Score is a whole number, so tiny wins hide. The 'Sure' columns show "
+               "even small changes. If sleep and phone move little for you, the AI is saying "
+               "this student needs the bigger help in Step 4. Try healthier answers in Step 1 "
+               "and watch sleep move the score.")
 else:
     st.warning("No examples to show right now.")
 
@@ -218,15 +224,41 @@ st.caption("First see WHAT to change, then your tips, then your day-by-day plan.
 if reco["flags"]:
     st.warning("⚠️ The app noticed: " + ", ".join(reco["flags"]).replace("_", " "))
 improved = [o for o in outs if o["improved"]] if outs else []
+same = [o for o in outs if not o["improved"]] if outs else []
 st.markdown("### 🔧 To change your level, change these")
+QUESTION_OF = {col: q for col, q, _h, _k in QUESTIONS}
+KIND_OF = {col: k for col, _q, _h, k in QUESTIONS}
+
+
+def _word(col, value):
+    """Show values as words: Yes/No for yes-no questions, whole numbers else."""
+    if KIND_OF.get(col) == "yesno":
+        return "Yes" if value >= (q25[col] + q75[col]) / 2 else "No"
+    return f"{round(value)}"
+
+
 if improved:
-    for o in improved:
+    for n, o in enumerate(improved, 1):
+        parts = []
+        for col, new_v in o["changes"].items():
+            q = QUESTION_OF.get(col, col)
+            parts.append(f"{q} (now: {_word(col, twin.state[col])} → do: {_word(col, new_v)})")
         st.write(
-            f"- **{SCENARIO_NAMES.get(o['scenario'], o['scenario'].replace('_', ' '))}** "
-            f"→ score {o['before']['score']} becomes {o['after']['score']}"
+            f"**{n}. {SCENARIO_NAMES.get(o['scenario'], o['scenario'].replace('_', ' '))}**"
         )
+        for p in parts:
+            st.write(f"   - {p}")
+        st.caption(f"   Score {o['before']['score']} → {o['after']['score']} ✅")
 else:
     st.write("- You are doing well - keep your sleep, water and play habits! 🎉")
+if same:
+    with st.expander("Changes that help only a little (see why)"):
+        for o in same:
+            st.write(
+                f"- {SCENARIO_NAMES.get(o['scenario'], o['scenario'].replace('_', ' '))}: "
+                f"score stays {o['before']['score']} - this habit alone is not enough, "
+                f"do the big changes above first."
+            )
 st.markdown("### ✅ Tips for you")
 for s in reco["strategies"]:
     st.write("- " + s)
