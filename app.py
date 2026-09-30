@@ -89,9 +89,18 @@ FRIENDLY = {
 
 @st.cache_resource(show_spinner="Training models (once, then cached)...")
 def get_trained():
+    from src.config import DEPRESSION_TYPES
+
     df, used_real = load_data()
     X, y = prepare_features(df)
-    label_names = list(LabelEncoder().fit(df["Depression_Type"].astype(str)).classes_)
+    raw_names = list(LabelEncoder().fit(df["Depression_Type"].astype(str)).classes_)
+    # Real CSV uses numeric codes 0-11: show human-readable names instead.
+    label_names = []
+    for c in raw_names:
+        try:
+            label_names.append(DEPRESSION_TYPES[int(float(c))])
+        except (ValueError, IndexError):
+            label_names.append(str(c))
     Xtr, Xte, ytr, yte, scaler, cols = split_and_scale(X, y)
     best_name, best, _fitted, results = train_and_select(
         Xtr, Xte, ytr, yte, label_names=label_names
@@ -177,32 +186,23 @@ reco = recommend(risk, twin.state)
 st.subheader("2 · Prediction and risk")
 k1, k2, k3 = st.columns(3)
 with k1:
-    st.markdown("<div class='card'>", unsafe_allow_html=True)
     st.metric("Predicted type", pred["label"])
-    st.markdown("</div>", unsafe_allow_html=True)
 with k2:
-    st.markdown("<div class='card'>", unsafe_allow_html=True)
     st.metric("Risk score", f"{risk['score']} / 30")
-    st.markdown("</div>", unsafe_allow_html=True)
 with k3:
-    st.markdown("<div class='card'>", unsafe_allow_html=True)
     st.metric("Risk level", RISK_BADGE.get(risk["level"], risk["level"]))
-    st.markdown("</div>", unsafe_allow_html=True)
 
 left, right = st.columns([1, 1])
 with left:
-    st.markdown("<div class='card'>", unsafe_allow_html=True)
-    st.markdown("### Top-3 likely types")
+    st.markdown("### Most likely conditions")
+    st.caption("Simple words: which condition the check-in points to, with confidence.")
     for t in risk["top3"]:
-        st.progress(float(t["prob"]), text=f"{t['type']}: {t['prob']:.0%}")
-    st.markdown("</div>", unsafe_allow_html=True)
+        st.progress(float(t["prob"]), text=f"{t['type']} - {t['prob']:.0%}")
 with right:
-    st.markdown("<div class='card'>", unsafe_allow_html=True)
-    st.markdown("### Probability chart")
+    st.markdown("### Confidence chart")
     top3_df = pd.DataFrame(risk["top3"]).set_index("type") if risk["top3"] else pd.DataFrame()
     if not top3_df.empty:
         st.bar_chart(top3_df["prob"], use_container_width=True)
-    st.markdown("</div>", unsafe_allow_html=True)
 
 # ------------------------------------------------------------- 3. what-if ---
 st.subheader("3 · What-if interventions")
@@ -231,19 +231,15 @@ if reco["flags"]:
     st.warning("⚠️ Flags: " + ", ".join(reco["flags"]).replace("_", " "))
 gg1, gg2 = st.columns([2, 1])
 with gg1:
-    st.markdown("<div class='card'>", unsafe_allow_html=True)
     st.markdown("### ✅ Strategies")
     for s in reco["strategies"]:
         st.write("- " + s)
     st.markdown("### 🗓️ Weekly roadmap")
     for r in reco["weekly_roadmap"]:
         st.write("- " + r)
-    st.markdown("</div>", unsafe_allow_html=True)
 with gg2:
-    st.markdown("<div class='card'>", unsafe_allow_html=True)
     st.markdown("### 💬 Encouragement")
     st.info(reco["encouragement"])
-    st.markdown("</div>", unsafe_allow_html=True)
 
 st.divider()
 st.caption(reco["disclaimer"])
