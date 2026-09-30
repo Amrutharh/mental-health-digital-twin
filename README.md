@@ -1,5 +1,7 @@
 # 🧠 Student Mental-Health Digital Twin
 
+**🚀 Live Demo:** https://mental-health-digital-twin-gff6akkdz5nn9m8x9vnjyr.streamlit.app/
+
 An **8-layer ML system** that mirrors a student's mental-health state live, predicts
 depression type (12 classes), simulates **what-if interventions** without touching
 the real student, and outputs risk scores + rule-based guidance.
