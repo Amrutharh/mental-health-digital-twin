@@ -20,8 +20,7 @@ def build_models(random_state: int = RANDOM_STATE) -> dict:
         "RandomForest": RandomForestClassifier(
             n_estimators=200, random_state=random_state, n_jobs=-1),
         "GradientBoosting": GradientBoostingClassifier(random_state=random_state),
-        "LogisticRegression": LogisticRegression(
-            max_iter=2000, multi_class="auto", n_jobs=-1),
+        "LogisticRegression": LogisticRegression(max_iter=2000),
     }
     if HAS_XGB:
         models["XGBoost"] = XGBClassifier(
