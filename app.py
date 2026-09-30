@@ -10,8 +10,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from src import (load_data, prepare_features, split_and_scale,
                  train_and_select, StudentDigitalTwin, risk_profile,
-                 risk_trend, recommend, compare_scenarios, DEFAULT_SCENARIOS)
-from src.config import FEATURES
+                 risk_trend, recommend, compare_scenarios)
 from sklearn.preprocessing import LabelEncoder
 
 st.set_page_config(page_title="Student Mental-Health Digital Twin", layout="wide")
@@ -34,19 +33,16 @@ for k, v in results.items():
 st.subheader("1️⃣ Live student state")
 c1, c2, c3 = st.columns(3)
 vals = {}
-vals["Age"] = c1.slider("Age", 15, 30, 20)
-vals["Gender"] = c1.selectbox("Gender", [0, 1, 2],
-                              format_func=lambda x: ["Female", "Male", "Other"][x])
-vals["Sleep_Hours"] = c1.slider("Sleep hours", 2.0, 11.0, 6.0, 0.5)
-vals["Appetite_Score"] = c1.slider("Appetite (1-5)", 1, 5, 3)
-for i, f in enumerate([f for f in FEATURES if f not in vals]):
+# Sliders auto-adapt to the REAL csv columns (all numeric) or synthetic schema.
+for i, f in enumerate(cols):
     col = [c1, c2, c3][i % 3]
-    if f in ("Self_Harm_Flag", "Suicidal_Thoughts", "Past_Depression_History"):
-        vals[f] = col.selectbox(f, [0, 1])
-    elif f == "Physical_Symptoms_Count":
-        vals[f] = col.slider(f, 0, 8, 2)
+    lo, hi = float(df[f].min()), float(df[f].max())
+    med = float(df[f].median())
+    if hi - lo <= 2:  # binary flag
+        vals[f] = col.selectbox(f, sorted(df[f].unique().tolist()),
+                                index=0)
     else:
-        vals[f] = col.slider(f, 0, 10, 4)
+        vals[f] = col.slider(f, float(lo), float(hi), float(med))
 
 twin = StudentDigitalTwin("demo-student", vals, model=best,
                           scaler=scaler, feature_columns=cols,
@@ -63,8 +59,7 @@ m3.metric("Risk level", risk["level"])
 st.write("Top-3:", ", ".join(f"{t['type']} ({t['prob']:.0%})" for t in risk["top3"]))
 
 st.subheader("3️⃣ What-if interventions")
-scenarios = {k: v for k, v in DEFAULT_SCENARIOS.items()}
-outs = compare_scenarios(twin, scenarios)
+outs = compare_scenarios(twin)  # auto-picks scenarios for this schema
 st.dataframe(pd.DataFrame([{"scenario": o["scenario"],
                             "before": o["before"]["score"],
                             "after": o["after"]["score"],

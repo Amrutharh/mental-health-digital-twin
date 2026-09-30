@@ -5,7 +5,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from src import *  # noqa
 from src import (load_data, prepare_features, split_and_scale,
                  train_and_select, StudentDigitalTwin, risk_profile,
-                 recommend, compare_scenarios, DEFAULT_SCENARIOS)
+                 recommend, compare_scenarios)
 from sklearn.preprocessing import LabelEncoder
 
 
@@ -29,7 +29,7 @@ def test_full_pipeline():
     assert 0 <= risk["score"] <= 30 and risk["level"] in RISK_LEVELS
     reco = recommend(risk, twin.state)
     assert len(reco["strategies"]) > 0
-    outs = compare_scenarios(twin, DEFAULT_SCENARIOS)
-    assert len(outs) == len(DEFAULT_SCENARIOS)
-    twin.update(Sleep_Hours=7.5)
+    outs = compare_scenarios(twin)  # auto schema-aware
+    assert len(outs) >= 1
+    twin.update(**{cols[0]: float(feats[cols[0]])})
     assert len(twin.history) >= 2

@@ -12,16 +12,24 @@ def risk_profile(proba, state: dict, label_names=None) -> dict:
     p_no = float(proba[0]) if len(proba) > 0 else 0.0  # class 0 ~ No Depression
     # Base: how far from 'No Depression', scaled to ~0-20
     base = (1.0 - p_no) * 20.0
-    # Symptom load 0-10 -> adds 0-5
-    symptom_keys = ["Sadness_Level", "Interest_Loss", "Fatigue_Level",
-                    "Worthlessness_Feeling", "Nervousness_Level"]
-    sym = float(np.mean([state.get(k, 0) for k in symptom_keys])) if state else 0
+    # Symptom load: use whichever symptom-like keys exist (synthetic or real schema)
+    symptom_keys = [k for k in
+                    ["Sadness_Level", "Interest_Loss", "Fatigue_Level",
+                     "Worthlessness_Feeling", "Nervous_Level", "Nervousness_Level",
+                     "Low_Energy", "Low_SelfEsteem", "Worsening_Depression",
+                     "Depression_Score", "Symptoms"]
+                    if k in (state or {})]
+    vals = [float(state.get(k, 0)) for k in symptom_keys] if symptom_keys else [0]
+    # Normalise ~0-10 scale guess: values >10 (e.g. Symptoms=11) get scaled down
+    sym = float(np.mean(vals))
+    if sym > 10:
+        sym = sym / 2.0
     score = base + sym * 0.5
-    # Red flags push the score up hard
+    # Red flags push the score up hard (both schemas)
     if state:
-        if state.get("Suicidal_Thoughts", 0) == 1:
+        if state.get("Suicidal_Thoughts", state.get("Suicide_Attempts", 0)) == 1:
             score += 5
-        if state.get("Self_Harm_Flag", 0) == 1:
+        if state.get("Self_Harm_Flag", state.get("Self_Harm", 0)) == 1:
             score += 3
         if state.get("Sleep_Hours", 7) < 4:
             score += 2

@@ -9,9 +9,12 @@ from .config import FEATURES, TARGET_COL, TEST_SIZE, RANDOM_STATE
 def prepare_features(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series]:
     """Select numeric features, one-hot any extra categoricals, encode target."""
     df = df.copy()
-    # Keep known 19 features if present; otherwise use all non-target columns.
-    feat_cols = [c for c in FEATURES if c in df.columns]
-    if not feat_cols:
+    # If the CSV matches the documented 19-feature schema use it;
+    # otherwise (e.g. the real 20-col CSV) use ALL non-target columns.
+    overlap = [c for c in FEATURES if c in df.columns]
+    if len(overlap) >= 5:
+        feat_cols = overlap
+    else:
         feat_cols = [c for c in df.columns if c != TARGET_COL]
     X = df[feat_cols]
     # One-hot non-numeric extras (e.g. Gender='M'/'F' in the real CSV).

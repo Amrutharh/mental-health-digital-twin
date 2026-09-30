@@ -13,11 +13,16 @@ class StudentDigitalTwin:
     def __init__(self, student_id: str, features: dict,
                  model=None, scaler=None, feature_columns=None,
                  label_names=None):
-        missing = [f for f in FEATURES if f not in features]
+        # Flexible schema: twin tracks whatever columns the trained model uses.
+        # Falls back to the documented 19-feature schema for synthetic data.
+        self.feature_columns = (list(feature_columns) if feature_columns
+                                else [c for c in FEATURES if c in features]
+                                or list(features.keys()))
+        missing = [f for f in self.feature_columns if f not in features]
         if missing:
             raise ValueError(f"Missing features for twin: {missing}")
         self.student_id = student_id
-        self.state = {f: features[f] for f in FEATURES}
+        self.state = {f: features[f] for f in self.feature_columns}
         self.model = model
         self.scaler = scaler
         self.feature_columns = feature_columns or list(FEATURES)
@@ -59,8 +64,8 @@ class StudentDigitalTwin:
 
     def update(self, event: str = "update", **changes) -> dict:
         for k, v in changes.items():
-            if k not in FEATURES:
-                raise KeyError(f"Unknown feature '{k}'. Expected one of {FEATURES}")
+            if k not in self.state:
+                raise KeyError(f"Unknown feature '{k}'. Twin tracks {self.feature_columns}")
             self.state[k] = v
         return self.snapshot(event=event)
 

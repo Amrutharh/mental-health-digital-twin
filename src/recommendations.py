@@ -41,23 +41,34 @@ def recommend(risk: dict, state: dict) -> dict:
                    "This week: daily supervised check-ins"]
         encouragement = "Your safety matters most. Please reach out for help right now."
 
-    # --- feature-specific flags -------------------------------------------
-    if state.get("Sleep_Hours", 7) < 6:
+    # --- feature-specific flags (handles both synthetic + real schemas) -----
+    def _get(*names, default=0):
+        for n in names:
+            if n in state:
+                return state[n]
+        return default
+    if _get("Sleep_Hours", default=7) < 6:
         flags.append("low_sleep")
-        strategies.append(f"Sleep is low ({state['Sleep_Hours']}h) — "
+        strategies.append(f"Sleep is low ({_get('Sleep_Hours', default=7)}h) — "
                           "target 7-8h, fixed wake time.")
-    if state.get("Self_Harm_Flag", 0) == 1:
+    if _get("Self_Harm_Flag", "Self_Harm", default=0) == 1:
         flags.append("self_harm")
         strategies.append("Self-harm flagged — please involve a professional immediately.")
-    if state.get("Suicidal_Thoughts", 0) == 1:
+    if _get("Suicidal_Thoughts", "Suicide_Attempts", default=0) >= 1:
         flags.append("suicidal_thoughts")
         strategies.append("Suicidal thoughts flagged — crisis support now (not later).")
-    if state.get("Social_Withdrawal", 0) >= 7:
+    if _get("Social_Withdrawal", default=0) >= 7:
         flags.append("withdrawal")
         strategies.append("High withdrawal — schedule one small social contact this week.")
-    if state.get("Academic_Pressure", 0) >= 7:
+    if _get("Academic_Pressure", default=0) >= 7:
         flags.append("academic_pressure")
         strategies.append("High academic pressure — break work into 25-min blocks + ask for help.")
+    if _get("Nervous_Level", "Nervousness_Level", default=0) >= 7:
+        flags.append("high_nervousness")
+        strategies.append("High nervousness — try daily breathing/mindfulness + cut caffeine.")
+    if _get("SocialMedia_Hours", default=0) >= 7:
+        flags.append("heavy_social_media")
+        strategies.append("Heavy social-media use — set a 2h/day limit + no phone after 10pm.")
 
     return {"risk_level": level, "risk_score": score, "flags": flags,
             "strategies": strategies, "weekly_roadmap": roadmap,
