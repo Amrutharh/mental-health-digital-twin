@@ -10,36 +10,55 @@ def recommend(risk: dict, state: dict) -> dict:
     strategies, roadmap, flags = [], [], []
 
     # --- universal by level ------------------------------------------------
+    # Simple words + concrete daily habits (drink water, sleep, play...).
     if level == "Low":
-        strategies += ["Maintain a consistent sleep schedule (7-8h).",
-                       "Keep a brief daily mood journal.",
-                       "Stay physically active 30 min/day."]
-        roadmap = ["Mon: 30-min walk", "Wed: journal + friend catch-up",
-                   "Fri: review week", "Sun: plan next week"]
-        encouragement = "You're doing well — small steady habits keep you resilient."
+        strategies += ["Sleep 8 hours every night at the same time.",
+                       "Drink 6-8 glasses of water every day.",
+                       "Play outside for 30 minutes every day."]
+        roadmap = ["Mon: drink 6 glasses of water + play outside 30 min",
+                   "Tue: sleep 8 hours + eat breakfast",
+                   "Wed: play with a friend + drink water",
+                   "Thu: sleep 8 hours + no phone while eating",
+                   "Fri: play outside 30 min + tell family one happy thing",
+                   "Sat: drink water + help at home + early bed",
+                   "Sun: rest, drink water, get ready for school"]
+        encouragement = "You are doing well! Keep these small habits every day."
     elif level == "Medium":
-        strategies += ["Practice 10-min breathing / mindfulness daily.",
-                       "Limit late-night screens; protect sleep.",
-                       "Talk to a trusted friend or mentor this week."]
-        roadmap = ["Daily: 10-min mindfulness", "Tue: counselling-centre intro visit",
-                   "Thu: exercise session", "Sat: social activity"]
-        encouragement = "You've noticed early signs — acting now makes a big difference."
+        strategies += ["Sleep 8 hours every night - no phone after 9pm.",
+                       "Drink water every time you feel tired.",
+                       "Tell one person you trust how you feel."]
+        roadmap = ["Mon: sleep 8 hours + drink 6 glasses of water",
+                   "Tue: tell a parent or teacher how you feel",
+                   "Wed: play outside 30 min + no phone while eating",
+                   "Thu: sleep 8 hours + drink water + deep breaths 5 times",
+                   "Fri: play with a friend + eat dinner with family",
+                   "Sat: morning walk + drink water + early bed",
+                   "Sun: rest + tell family one good thing of the week"]
+        encouragement = "You noticed early signs - doing these small things now helps a lot."
     elif level == "High":
-        strategies += ["Book a counsellor appointment within 48 hours.",
-                       "Share how you feel with someone you trust today.",
-                       "Use grounding (5-4-3-2-1) when overwhelmed."]
-        roadmap = ["Day 1-2: counsellor booking + trusted-person chat",
-                   "Day 3-4: sleep reset (no screens after 10pm)",
-                   "Day 5-7: daily check-ins + light exercise"]
-        encouragement = "Things feel heavy right now, but support helps — reach out today."
+        strategies += ["Tell a parent or teacher TODAY how you feel.",
+                       "Sleep 8 hours - give your phone to a parent at 9pm.",
+                       "Drink water and eat 3 meals every day."]
+        roadmap = ["Mon: tell a parent TODAY + sleep 8 hours",
+                   "Tue: meet the school counsellor + drink 6 glasses of water",
+                   "Wed: no phone while eating + play outside with someone",
+                   "Thu: sleep 8 hours + eat breakfast, lunch, dinner",
+                   "Fri: tell the counsellor how the week went + drink water",
+                   "Sat: family time + morning walk + early bed",
+                   "Sun: rest + parent checks how you feel"]
+        encouragement = "Things feel heavy now, but people want to help you - talk to them today."
     else:  # Severe
-        strategies += ["URGENT: contact campus counselling / crisis helpline now.",
-                       "Do not stay alone — reach a trusted person immediately.",
-                       "If you may act on self-harm thoughts, call emergency services."]
-        roadmap = ["NOW: helpline + trusted person",
-                   "Today: professional assessment",
-                   "This week: daily supervised check-ins"]
-        encouragement = "Your safety matters most. Please reach out for help right now."
+        strategies += ["URGENT: tell a parent, teacher or counsellor NOW.",
+                       "Do not stay alone - sit with someone you trust.",
+                       "If you want to hurt yourself, call emergency services now."]
+        roadmap = ["Mon: tell an adult NOW + stay with family today",
+                   "Tue: visit the doctor or counsellor + drink water + eat meals",
+                   "Wed: stay with family + sleep 8 hours + no phone alone",
+                   "Thu: counsellor visit + eat 3 meals + drink water",
+                   "Fri: family checks on you many times + early bed",
+                   "Sat: stay with loved ones + short walk with someone",
+                   "Sun: rest with family + plan next week with the counsellor"]
+        encouragement = "You matter the most. Please stay with someone and get help right now."
 
     # --- feature-specific flags (handles both synthetic + real schemas) -----
     def _get(*names, default=0):

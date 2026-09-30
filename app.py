@@ -186,17 +186,24 @@ top = risk["top3"][0] if risk["top3"] else {"type": pred["label"], "prob": 0}
 st.progress(float(top["prob"]), text=f"{top['type']} - {top['prob']:.0%} sure")
 
 # ------------------------------------------------------------- Step 3 ---
-st.subheader("Step 3 · What if you change one habit?")
-st.caption("Example: what if you sleep 8 hours? Trying here changes nothing about you.")
+st.subheader("Step 3 · If you change something, what happens?")
+st.caption("Each row says: if you do THIS, your score changes from THIS to THAT.")
 outs = compare_scenarios(twin)
 if outs:
+    best = min(outs, key=lambda o: o["after"]["score"])
+    if best["improved"]:
+        st.success(
+            f"⭐ Best thing to try: **{SCENARIO_NAMES.get(best['scenario'], best['scenario'].replace('_', ' '))}** - "
+            f"your score goes from **{best['before']['score']} to {best['after']['score']}**."
+        )
     sdf = pd.DataFrame(
         [
             {
-                "Try this": SCENARIO_NAMES.get(o["scenario"], o["scenario"].replace("_", " ")),
-                "Score now": o["before"]["score"],
+                "If you do this": SCENARIO_NAMES.get(o["scenario"], o["scenario"].replace("_", " ")),
+                "Your score now": o["before"]["score"],
                 "Score after": o["after"]["score"],
-                "Better?": "✅ Yes" if o["improved"] else ("Same" if o["delta_score"] == 0 else "❌ No"),
+                "What happens": ("✅ Gets better" if o["improved"]
+                                 else ("Same, no change" if o["delta_score"] == 0 else "❌ Gets worse")),
             }
             for o in outs
         ]
@@ -206,15 +213,26 @@ else:
     st.warning("No examples to show right now.")
 
 # ------------------------------------------------------------- Step 4 ---
-st.subheader("Step 4 · What should you do next?")
-st.caption("Tips the app gives you at the end.")
+st.subheader("Step 4 · How to change your level + your 7-day plan")
+st.caption("First see WHAT to change, then your tips, then your day-by-day plan.")
 if reco["flags"]:
     st.warning("⚠️ The app noticed: " + ", ".join(reco["flags"]).replace("_", " "))
+improved = [o for o in outs if o["improved"]] if outs else []
+st.markdown("### 🔧 To change your level, change these")
+if improved:
+    for o in improved:
+        st.write(
+            f"- **{SCENARIO_NAMES.get(o['scenario'], o['scenario'].replace('_', ' '))}** "
+            f"→ score {o['before']['score']} becomes {o['after']['score']}"
+        )
+else:
+    st.write("- You are doing well - keep your sleep, water and play habits! 🎉")
+st.markdown("### ✅ Tips for you")
 for s in reco["strategies"]:
     st.write("- " + s)
-st.markdown("### Your week plan")
-for r in reco["weekly_roadmap"]:
-    st.write("- " + r)
+st.markdown("### 🗓️ Your 7-day plan (do one line each day)")
+for i, r in enumerate(reco["weekly_roadmap"], 1):
+    st.write(f"**Day {i}:** {r}")
 st.info(reco["encouragement"])
 
 st.divider()
