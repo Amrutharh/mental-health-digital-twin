@@ -17,13 +17,19 @@ st.set_page_config(page_title="Student Mental-Health Digital Twin", layout="wide
 st.title("🧠 Student Mental-Health Digital Twin")
 st.caption("8-layer system: preprocess → predict → twin → what-if → risk → guidance → dashboard → reports")
 
-with st.spinner("Training models…"):
+
+@st.cache_resource(show_spinner="Training models (once, then cached)…")
+def get_trained():
     df, used_real = load_data()
     X, y = prepare_features(df)
     label_names = list(LabelEncoder().fit(df["Depression_Type"].astype(str)).classes_)
     Xtr, Xte, ytr, yte, scaler, cols = split_and_scale(X, y)
     best_name, best, fitted, results = train_and_select(
         Xtr, Xte, ytr, yte, label_names=label_names)
+    return df, used_real, X, label_names, scaler, cols, best_name, best, results
+
+
+df, used_real, X, label_names, scaler, cols, best_name, best, results = get_trained()
 
 st.sidebar.success(f"Best model: **{best_name}**  |  real data: {used_real}")
 st.sidebar.subheader("Model F1 (macro)")
