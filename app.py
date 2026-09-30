@@ -154,6 +154,31 @@ st.caption("Tap each tab and answer. These are the questions the app is asking y
 
 YES_NO = {"No": 0, "Yes": 1}
 
+# Fixed answer type per question (data ranges alone guess wrong).
+# "yesno" -> No/Yes dropdown · "number" -> whole-number slider ·
+# "options" -> dropdown of that column's real choices.
+WIDGETS = {
+    "Age": "number",
+    "Education_Level": "options",
+    "Employment_Status": "options",
+    "Sleep_Hours": "number",
+    "SocialMedia_Hours": "number",
+    "SocialMedia_WhileEating": "yesno",
+    "Your overeating level": "yesno",
+    "How many times you eat ": "number",
+    "Coping_Methods": "options",
+    "Symptoms": "number",
+    "Low_Energy": "yesno",
+    "Low_SelfEsteem": "yesno",
+    "Nervous_Level": "number",
+    "Depression_Score": "number",
+    "Search_Depression_Online": "yesno",
+    "Worsening_Depression": "yesno",
+    "Mental_Health_Support": "yesno",
+    "Self_Harm": "yesno",
+    "Suicide_Attempts": "yesno",
+}
+
 vals: dict = {}
 tabs = st.tabs(list(GROUPS.keys()))
 for tab, (gname, feats) in zip(tabs, GROUPS.items()):
@@ -170,15 +195,23 @@ for tab, (gname, feats) in zip(tabs, GROUPS.items()):
             lo, hi = float(df[f].min()), float(df[f].max())
             med = float(df[f].median())
             label, hint = FRIENDLY.get(f, (f.strip().replace("_", " "), ""))
+            kind = WIDGETS.get(f)
+            if kind is None:  # fallback guess for unseen columns
+                kind = "yesno" if (hi - lo <= 2) else "number"
             with box:
-                if hi - lo <= 2 and set(df[f].unique().tolist()) <= {0, 1}:
+                if f == "Gender":
+                    choice = st.selectbox(label, ["Girl", "Boy"], index=0,
+                                          key=f"in_{f}", help=hint)
+                    vals[f] = 0 if choice == "Girl" else 1
+                elif kind == "yesno":
                     choice = st.selectbox(label, ["No", "Yes"], index=0,
                                           key=f"in_{f}", help=hint)
                     vals[f] = YES_NO[choice]
-                elif hi - lo <= 2:
+                elif kind == "options":
                     opts = sorted(df[f].unique().tolist())
-                    vals[f] = st.selectbox(label, opts, index=0,
-                                           key=f"in_{f}", help=hint)
+                    pick = st.selectbox(label, opts, index=0,
+                                        key=f"in_{f}", help=hint)
+                    vals[f] = pick
                 else:
                     # All inputs are whole numbers (no decimals anywhere).
                     vals[f] = st.slider(label, int(round(lo)), int(round(hi)),
