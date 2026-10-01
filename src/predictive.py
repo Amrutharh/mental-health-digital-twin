@@ -16,15 +16,17 @@ from .config import RANDOM_STATE
 
 
 def build_models(random_state: int = RANDOM_STATE) -> dict:
+    # Lean sizes for fast cold-start on free hosting (data is easily separable).
     models = {
         "RandomForest": RandomForestClassifier(
-            n_estimators=200, random_state=random_state, n_jobs=-1),
-        "GradientBoosting": GradientBoostingClassifier(random_state=random_state),
+            n_estimators=100, random_state=random_state, n_jobs=-1),
+        "GradientBoosting": GradientBoostingClassifier(
+            n_estimators=100, random_state=random_state),
         "LogisticRegression": LogisticRegression(max_iter=2000),
     }
     if HAS_XGB:
         models["XGBoost"] = XGBClassifier(
-            n_estimators=300, learning_rate=0.05, max_depth=6,
+            n_estimators=150, learning_rate=0.05, max_depth=6,
             subsample=0.9, colsample_bytree=0.9, eval_metric="mlogloss",
             random_state=random_state, n_jobs=-1)
     return models
